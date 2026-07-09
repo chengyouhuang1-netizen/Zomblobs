@@ -206,7 +206,8 @@ const player = {
     maxSta: 100,
     immune: 0,
     vel: new Vector(0, 0),
-    mouse: new Vector(null, null)
+    mouse: new Vector(null, null),
+    devmode: false
 };
 
 const enemy = {
@@ -318,7 +319,12 @@ const guns = {
     }
 }
 
-
+const wave = {
+    completed: 0,
+    enemiesToSpawn: 0,
+    cooldown: 0,
+    active: false
+}
 
 // Setup Function
 function setup() {
@@ -343,12 +349,16 @@ function draw() {
     timeSinceLastShot++;
     if (player.immune > 0) player.immune--;
 
+    if (guntype == 0 && !player.devMode) guntype = 1
+
+    waveSpawning()
+
     // Checks if hp is below 0
     if (player.hp <= 0) {
         ctx.fillStyle = 'rgba(19, 19, 19, 0.65)';
         ctx.fillRect(0, canvas.height / 3, canvas.width, canvas.height / 3)
         ctx.font = '60px Optimus_Princeps';
-        ctx.textAlign = "center"; 
+        ctx.textAlign = "center";
         ctx.textBaseline = "middle"
         ctx.fillStyle = 'rgb(169, 0, 0)';
         ctx.fillText("You Died", canvas.width / 2, canvas.height / 2)
@@ -365,7 +375,7 @@ function draw() {
             player.speed = 0.7
             if (player.sta < player.maxSta) player.sta += 0.2
         }
-    }    
+    }
     else {
         player.speed = 0.7
         if (player.sta < player.maxSta) player.sta += 1 / 3
@@ -470,7 +480,8 @@ function draw() {
     ctx.beginPath();
     ctx.arc(player.pos.x, player.pos.y, player.size, 0, Math.PI * 2);
     if (player.immune == 0) ctx.fillStyle = '#00adb5';
-    else ctx.fillStyle = '#00acb578';
+    else if (player.immune != 0) ctx.fillStyle = '#00acb578';
+    if (player.devMode) ctx.fillStyle = '#fbff00';
     ctx.fill();
 
     // Draw UI
@@ -496,7 +507,9 @@ function draw() {
         ctx.fillStyle = 'rgb(209, 185, 0)';
         ctx.fillRect(1300, canvasSect.arenaHeight + 100, 250 - (reloading / currentReloadTime) * 250, 20);
     }
+
     requestAnimationFrame(draw);
+    console.log(player.devMode)
 }
 
 
@@ -638,7 +651,7 @@ function playercollision(enemy) {
     )
     );
 
-    if (player.immune > 0) return;
+    if (player.immune > 0 || player.devMode) return;
 
     // Add knockback if player is not immune
     player.vel.add(new Vector(dir.x, dir.y).mult(10));
@@ -655,6 +668,28 @@ function findCurrentGun() {
         case 1: return guns.pistol
         case 2: return guns.shotgun
         case 3: return guns.sniper
+    }
+}
+
+function waveSpawning() {
+    if (!wave.active) return;
+    wave.active = true;
+    if (wave.enemiesToSpawn > 0) {
+        if (wave.cooldown == 0) {
+            const side = random("int", 1, 4)
+            const type = random("int", 1, 3)
+            if (side == 1) enemylist.push(new Enemy(type, 50, 50));
+            if (side == 2) enemylist.push(new Enemy(type, 50, canvasSect.arenaHeight - 50));
+            if (side == 3) enemylist.push(new Enemy(type, canvasSect.arenaWidth - 50, canvasSect.arenaHeight - 50));
+            if (side == 4) enemylist.push(new Enemy(type, canvasSect.arenaWidth - 50, 50));
+            wave.enemiesToSpawn--;
+            wave.cooldown = 60
+        }
+        else wave.cooldown--;
+    }
+    if (wave.enemiesToSpawn <= 0 && enemylist.length == 0) {
+        wave.active = false;
+        wave.completed++
     }
 }
 
@@ -687,7 +722,15 @@ window.addEventListener('keydown', (event) => {
         if (event.repeat) return;
         enemylist.push(new Enemy(3, 50, 50));
     }
-    if (event.key == '0') {
+    if (event.key == 'l' && !wave.active) {
+        wave.enemiesToSpawn = Math.round(Math.sqrt(30 * (wave.completed + 1)));
+        wave.active = true;
+    }
+    if (event.key == '=') {
+        if (!player.devMode) player.devMode = true;
+        else if (player.devMode) player.devMode = false;
+    }
+    if (event.key == '0' && player.devMode) {
         guntype = 0;
     }
     if (event.key == '1') {
@@ -720,9 +763,9 @@ window.addEventListener('click', (event) => {
             if (player.mouse.x >= 0 && player.mouse.x <= canvasSect.arenaWidth && player.mouse.y >= 0 && player.mouse.y <= canvasSect.arenaHeight) {
                 if (guntype == 0) {
                     for (let i = 1; i <= guns.god.bulletSetup.count; i++) {
-                            bulletlist.push(new Bullet(0, player.pos.x, player.pos.y))
-                            guns.god.loaded--
-                        }
+                        bulletlist.push(new Bullet(0, player.pos.x, player.pos.y))
+                        guns.god.loaded--
+                    }
                     timeSinceLastShot = 0
                 }
 
