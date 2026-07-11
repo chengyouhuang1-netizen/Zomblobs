@@ -3,15 +3,15 @@ fetch("CHANGELOG.md")
     .then(text => {
         console.log(text);
     });
-
 const canvas = document.getElementById('myCanvas');
 const ctx = canvas.getContext('2d');
-const keypressed = {};
-const enemylist = [];
-const bulletlist = [];
+const keyPressed = {};
+const enemyList = [];
+const bulletList = [];
+const dropList = [];
 let reloading = 0;
 let timeSinceLastShot = 0;
-let guntype = 1;
+let gunType = 1;
 let currentGun = null
 let currentReloadTime = 0
 const canvasSect = {
@@ -20,6 +20,32 @@ const canvasSect = {
     uiWidth: null,
     uiHeight: null
 }
+
+const iconPaths = {
+    healBlob: 'icons/healBlob.png',
+    goldBlob: 'icons/goldBlob.png',
+    pistolBullet: 'icons/pistolBullet.png',
+    shotgunBullet: 'icons/shotgunBullet.png',
+    sniperBullet: 'icons/sniperBullet.png'
+}
+
+const icons = {};
+
+let iconsLoadedCount = 0
+const iconsToLoad = Object.keys(iconPaths).length
+
+Object.keys(iconPaths).forEach(key => {
+    const img = new Image();
+    img.src = iconPaths[key];
+
+    img.onload = () => {
+        iconsLoadedCount++;
+        icons[key] = img
+        if (iconsLoadedCount === iconsToLoad) {
+            console.log("All icons loaded successfully.");
+        }
+    }
+});
 
 class Vector {
     constructor(x = 0, y = 0) {
@@ -137,6 +163,7 @@ class Enemy {
     constructor(preset, x, y, hp, dam, speed, size, mass, colour) {
         if (preset == 1) {
             speed = enemy.norm.speed
+            this.type = "norm"
             hp = enemy.norm.hp
             dam = enemy.norm.dam
             size = enemy.norm.size
@@ -145,6 +172,7 @@ class Enemy {
         }
         if (preset == 2) {
             speed = enemy.small.speed
+            this.type = "small"
             hp = enemy.small.hp
             dam = enemy.small.dam
             size = enemy.small.size
@@ -153,6 +181,7 @@ class Enemy {
         }
         if (preset == 3) {
             speed = enemy.big.speed
+            this.type = "big"
             hp = enemy.big.hp
             dam = enemy.big.dam
             size = enemy.big.size
@@ -167,6 +196,7 @@ class Enemy {
         this.size = size;
         this.mass = mass;
         this.hitTimer = 0
+        this.loot = enemy[this.type].loot
         this.pos = new Vector(x, y);
         this.vel = new Vector(0, 0);
     }
@@ -193,13 +223,43 @@ class Enemy {
     }
 }
 
+class Drop {
+    constructor(type = null, x = null, y = null) {
+        this.type = type
+        this.pos = new Vector(x, y)
+        this.rad = 18
+        this.vel = new Vector(0, 0)
+        this.data = dropTypes[type]
+        this.randDir = random("float", 0, 360)
+        this.impulseDir = new Vector(Math.cos(this.randDir), Math.sin(this.randDir))
+        this.impulseTimer = 10
+    }
+
+    display() {
+        ctx.drawImage(icons[this.data.image], this.pos.x, this.pos.y, this.data.width, this.data.height)
+    }
+
+    collectCheck() {
+        this.dir = new Vector(player.pos.x - this.pos.x, player.pos.y - this.pos.y)
+        this.dist = this.dir.mag()
+        if (this.dist < 80) {
+            this.dir.normalize().mult(5);
+            this.vel.add(this.dir);
+            this.pos.add(this.vel);
+            this.vel.mult(0.75);
+        }
+
+    }
+}
+
 
 const player = {
     moveDir: new Vector(0, 0),
-    pos: new Vector(50, 50),
+    pos: new Vector(null, null),
     size: 20,
     speed: 0.7,
     mass: 75,
+    goldBlobs: 0,
     hp: 100,
     maxHp: 100,
     sta: 100,
@@ -218,6 +278,13 @@ const enemy = {
         dam: 20,
         size: 20,
         mass: 75,
+        loot: [
+            { type: "healBlob", chance: 15 },
+            { type: "goldBlob", chance: 10 },
+            { type: "pistolBullet", chance: 10 },
+            { type: "shotgunBullet", chance: 8 },
+            { type: "sniperBullet", chance: 5 }
+        ],
         colour: '#075518'
     },
     small: {
@@ -227,6 +294,12 @@ const enemy = {
         dam: 10,
         size: 10,
         mass: 45,
+        loot: [
+            { type: "healBlob", chance: 5 },
+            { type: "goldBlob", chance: 2 },
+            { type: "pistolBullet", chance: 2 },
+            { type: "shotgunBullet", chance: 2 },
+        ],
         colour: '#0a8a26'
     },
     big: {
@@ -236,6 +309,13 @@ const enemy = {
         dam: 40,
         size: 40,
         mass: 100,
+        loot: [
+            { type: "healBlob", chance: 20 },
+            { type: "goldBlob", chance: 20 },
+            { type: "pistolBullet", chance: 15 },
+            { type: "shotgunBullet", chance: 12 },
+            { type: "sniperBullet", chance: 10 }
+        ],
         colour: '#04380f'
     }
 }
@@ -319,6 +399,59 @@ const guns = {
     }
 }
 
+const dropTypes = {
+    healBlob: {
+        id: 1,
+        image: 'healBlob',
+        rad: 30,
+        width: 22,
+        height: 18,
+        onPickup() {
+            player.hp += 10
+        }
+    },
+    goldBlob: {
+        id: 2,
+        image: 'goldBlob',
+        rad: 30,
+        width: 22,
+        height: 18,
+        onPickup() {
+            player.goldBlobs += 5
+        }
+    },
+    pistolBullet: {
+        id: 3,
+        image: 'pistolBullet',
+        rad: 30,
+        width: 20,
+        height: 18,
+        onPickup() {
+            guns.pistol.unloaded += 15
+        }
+    },
+    shotgunBullet: {
+        id: 4,
+        image: 'shotgunBullet',
+        rad: 30,
+        width: 20,
+        height: 20,
+        onPickup() {
+            guns.shotgun.unloaded += 10
+        }
+    },
+    sniperBullet: {
+        id: 5,
+        image: 'sniperBullet',
+        rad: 30,
+        width: 20,
+        height: 30,
+        onPickup() {
+            guns.sniper.unloaded += 5
+        }
+    }
+}
+
 const wave = {
     completed: 0,
     enemiesToSpawn: 0,
@@ -334,6 +467,8 @@ function setup() {
     canvasSect.arenaWidth = canvas.width
     canvasSect.uiWidth = canvasSect.arenaWidth
     canvasSect.uiHeight = canvas.height - canvasSect.arenaHeight
+    player.pos.x = canvasSect.arenaWidth / 2
+    player.pos.y = canvasSect.arenaHeight / 2
 }
 
 
@@ -349,9 +484,28 @@ function draw() {
     timeSinceLastShot++;
     if (player.immune > 0) player.immune--;
 
-    if (guntype == 0 && !player.devMode) guntype = 1
+    if (gunType == 0 && !player.devMode) gunType = 1
 
     waveSpawning()
+
+    // Drops display
+    for (let k = dropList.length - 1; k >= 0; k--) {
+        dropList[k].display()
+        dropList[k].collectCheck()
+
+        if (dropList[k].impulseTimer > 0) {
+            dropList[k].impulseTimer--;
+            dropList[k].vel.mult(Math.round(dropList[k].impulseTimer / 10, 2));
+            dropList[k].vel.add(dropList[k].impulseDir)
+            dropList[k].pos.add(dropList[k].vel)
+        }
+
+        if (dropList[k].dist <= dropList[k].rad + player.size && dropList[k].impulseTimer == 0) {
+            pickUpItem(dropList[k].type)
+            dropList.splice(k, 1)
+        };
+    }
+
 
     // Checks if hp is below 0
     if (player.hp <= 0) {
@@ -366,8 +520,8 @@ function draw() {
     }
 
     // Sprint
-    if (keypressed['w'] || keypressed['a'] || keypressed['s'] || keypressed['d']) {
-        if (keypressed[' '] && player.sta > 0) {
+    if (keyPressed['w'] || keyPressed['a'] || keyPressed['s'] || keyPressed['d']) {
+        if (keyPressed[' '] && player.sta > 0) {
             player.speed = 1.4;
             player.sta -= 0.5;
         }
@@ -384,10 +538,10 @@ function draw() {
     // Update coordinates based on key presses
     player.moveDir.x = 0;
     player.moveDir.y = 0;
-    if (keypressed['w'] && player.pos.y >= 0 + player.size) player.moveDir.y -= 1;
-    if (keypressed['s'] && player.pos.y <= canvasSect.arenaHeight - player.size) player.moveDir.y += 1;
-    if (keypressed['a'] && player.pos.x >= 0 + player.size) player.moveDir.x -= 1;
-    if (keypressed['d'] && player.pos.x <= canvasSect.arenaWidth - player.size) player.moveDir.x += 1;
+    if (keyPressed['w'] && player.pos.y >= 0 + player.size) player.moveDir.y -= 1;
+    if (keyPressed['s'] && player.pos.y <= canvasSect.arenaHeight - player.size) player.moveDir.y += 1;
+    if (keyPressed['a'] && player.pos.x >= 0 + player.size) player.moveDir.x -= 1;
+    if (keyPressed['d'] && player.pos.x <= canvasSect.arenaWidth - player.size) player.moveDir.x += 1;
 
     // If player is out of the border, it is sent back in
     if (player.pos.x < 0 + player.size) player.pos.x = 0 + player.size;
@@ -407,53 +561,56 @@ function draw() {
 
 
     // Enemy movement, display and collision
-    for (let i = enemylist.length - 1; i >= 0; i--) {
-        if (enemylist[i].pos.x < 0 + enemylist[i].size) enemylist[i].pos.x = 0 + enemylist[i].size;
-        if (enemylist[i].pos.y < 0 + enemylist[i].size) enemylist[i].pos.y = 0 + enemylist[i].size;
-        if (enemylist[i].pos.x > canvasSect.arenaWidth - enemylist[i].size) enemylist[i].pos.x = canvasSect.arenaWidth - enemylist[i].size;
-        if (enemylist[i].pos.y > canvasSect.arenaHeight - enemylist[i].size) enemylist[i].pos.y = canvasSect.arenaHeight - enemylist[i].size;
-        enemylist[i].movement(player.pos);
-        enemylist[i].display();
-        playercollision(enemylist[i]);
+    for (let i = enemyList.length - 1; i >= 0; i--) {
+        if (enemyList[i].pos.x < 0 + enemyList[i].size) enemyList[i].pos.x = 0 + enemyList[i].size;
+        if (enemyList[i].pos.y < 0 + enemyList[i].size) enemyList[i].pos.y = 0 + enemyList[i].size;
+        if (enemyList[i].pos.x > canvasSect.arenaWidth - enemyList[i].size) enemyList[i].pos.x = canvasSect.arenaWidth - enemyList[i].size;
+        if (enemyList[i].pos.y > canvasSect.arenaHeight - enemyList[i].size) enemyList[i].pos.y = canvasSect.arenaHeight - enemyList[i].size;
+        enemyList[i].movement(player.pos);
+        enemyList[i].display();
+        playercollision(enemyList[i]);
     }
+
     // Resolve collisions after updating all enemy positions
-    enemycollision(enemylist);
+    enemycollision(enemyList);
 
     // Bullet movement, display, and collision
-    for (let j = bulletlist.length - 1; j >= 0; j--) {
+    for (let j = bulletList.length - 1; j >= 0; j--) {
 
-        bulletlist[j].movement();
-        bulletlist[j].display();
-        if (bulletlist[j].died()) {
-            bulletlist.splice(j, 1);
+        bulletList[j].movement();
+        bulletList[j].display();
+        if (bulletList[j].died()) {
+            bulletList.splice(j, 1);
             break;
         }
 
         // Bullet and enemy collision
-        for (let i = enemylist.length - 1; i >= 0; i--) {
-            if (hit(bulletlist[j], enemylist[i])) {
+        for (let i = enemyList.length - 1; i >= 0; i--) {
+            if (hit(bulletList[j], enemyList[i])) {
 
-                enemylist[i].hitTimer = 5
-                const enemyknockback = new Vector(enemylist[i].pos.x - bulletlist[j].pos.x, enemylist[i].pos.y - bulletlist[j].pos.y)
+                enemyList[i].hitTimer = 5
+                const enemyknockback = new Vector(enemyList[i].pos.x - bulletList[j].pos.x, enemyList[i].pos.y - bulletList[j].pos.y)
                 enemyknockback.normalize()
-                enemyknockback.mult(150 / enemylist[i].mass)
-                enemylist[i].vel.add(enemyknockback)
+                enemyknockback.mult(150 / enemyList[i].mass)
+                enemyList[i].vel.add(enemyknockback)
 
 
 
-                if (enemylist[i].hp > bulletlist[j].dam) {
-                    enemylist[i].hp -= bulletlist[j].dam;
-                    bulletlist.splice(j, 1);
+                if (enemyList[i].hp > bulletList[j].dam) {
+                    enemyList[i].hp -= bulletList[j].dam;
+                    bulletList.splice(j, 1);
                     break;
                 }
-                else if (enemylist[i].hp == bulletlist[j].dam) {
-                    bulletlist.splice(j, 1);
-                    enemylist.splice(i, 1);
+                else if (enemyList[i].hp == bulletList[j].dam) {
+                    bulletList.splice(j, 1);
+                    spawnDrops(enemyList[i])
+                    enemyList.splice(i, 1);
                     break;
                 }
-                else if (enemylist[i].hp < bulletlist[j].dam) {
-                    bulletlist[j].dam -= enemylist[i].hp;
-                    enemylist.splice(i, 1)
+                else if (enemyList[i].hp < bulletList[j].dam) {
+                    bulletList[j].dam -= enemyList[i].hp;
+                    spawnDrops(enemyList[i])
+                    enemyList.splice(i, 1)
                     break;
                 }
             }
@@ -489,6 +646,7 @@ function draw() {
     ctx.fillRect(0, canvasSect.arenaHeight, canvasSect.uiWidth, 200);
 
     // Draw health bar
+    if (player.hp > player.maxHp) player.hp = player.maxHp
     ctx.fillStyle = 'rgb(70, 14, 10)';
     ctx.fillRect(45, canvasSect.arenaHeight + 45, 410, 20);
     ctx.fillStyle = 'rgb(165, 28, 18)';
@@ -509,7 +667,6 @@ function draw() {
     }
 
     requestAnimationFrame(draw);
-    console.log(player.devMode)
 }
 
 
@@ -519,6 +676,17 @@ function random(type, min, max) {
     if (type == "int") return Math.floor(Math.random() * (max - min + 1) + min)
 }
 
+function pickUpItem(type) {
+    dropTypes[type].onPickup()
+}
+
+function spawnDrops(enemy) {
+    for (const drop of enemy.loot) {
+        if (random("float", 0, 100) < drop.chance) {
+            dropList.push(new Drop(drop.type, enemy.pos.x, enemy.pos.y))
+        }
+    }
+}
 
 // Registers when two circles touch
 function hit(a, b) {
@@ -528,16 +696,16 @@ function hit(a, b) {
 
 
 // Resolves collision between enemy and enemy
-function enemycollision(enemylist) {
-    for (let i = 0; i < enemylist.length; i++) {
-        for (let j = i + 1; j < enemylist.length; j++) {
+function enemycollision(enemyList) {
+    for (let i = 0; i < enemyList.length; i++) {
+        for (let j = i + 1; j < enemyList.length; j++) {
 
             const dir = new Vector(
-                enemylist[i].pos.x - enemylist[j].pos.x,
-                enemylist[i].pos.y - enemylist[j].pos.y
+                enemyList[i].pos.x - enemyList[j].pos.x,
+                enemyList[i].pos.y - enemyList[j].pos.y
             );
             const dist = dir.mag();
-            const target = enemylist[i].size + enemylist[j].size;
+            const target = enemyList[i].size + enemyList[j].size;
 
 
             if (dist >= target) continue;
@@ -545,30 +713,30 @@ function enemycollision(enemylist) {
 
 
             dir.normalize();
-            const totalMass = enemylist[i].mass + enemylist[j].mass;
+            const totalMass = enemyList[i].mass + enemyList[j].mass;
             const overlap = target - dist;
 
-            // Push enemylist[i]
-            enemylist[i].pos.add(
-                new Vector(dir.x, dir.y).mult(overlap * (enemylist[i].mass / enemylist[j].mass))
+            // Push enemyList[i]
+            enemyList[i].pos.add(
+                new Vector(dir.x, dir.y).mult(overlap * (enemyList[i].mass / enemyList[j].mass))
             );
 
 
-            // Push enemylist[j]
-            enemylist[j].pos.sub(
-                new Vector(dir.x, dir.y).mult(overlap * (enemylist[j].mass / enemylist[i].mass))
+            // Push enemyList[j]
+            enemyList[j].pos.sub(
+                new Vector(dir.x, dir.y).mult(overlap * (enemyList[j].mass / enemyList[i].mass))
             );
 
             const relatVel = new Vector(
-                enemylist[i].vel.x - enemylist[j].vel.x,
-                enemylist[i].vel.y - enemylist[j].vel.y
+                enemyList[i].vel.x - enemyList[j].vel.x,
+                enemyList[i].vel.y - enemyList[j].vel.y
             );
 
             const velDir = relatVel.x * dir.x + relatVel.y * dir.y;
 
             if (velDir > 0) continue;
 
-            const impulseMag = -1 * (velDir / ((1 / enemylist[i].mass) + (1 / enemylist[j].mass)));
+            const impulseMag = -1 * (velDir / ((1 / enemyList[i].mass) + (1 / enemyList[j].mass)));
 
             const impulse = new Vector(
                 impulseMag * dir.x,
@@ -576,15 +744,15 @@ function enemycollision(enemylist) {
             );
 
 
-            enemylist[i].vel.add(new Vector(
-                impulse.x / enemylist[i].mass,
-                impulse.y / enemylist[i].mass
+            enemyList[i].vel.add(new Vector(
+                impulse.x / enemyList[i].mass,
+                impulse.y / enemyList[i].mass
             )
             );
 
-            enemylist[j].vel.sub(new Vector(
-                impulse.x / enemylist[j].mass,
-                impulse.y / enemylist[j].mass
+            enemyList[j].vel.sub(new Vector(
+                impulse.x / enemyList[j].mass,
+                impulse.y / enemyList[j].mass
             )
             );
 
@@ -663,7 +831,7 @@ function playercollision(enemy) {
 };
 
 function findCurrentGun() {
-    switch (guntype) {
+    switch (gunType) {
         case 0: return guns.god
         case 1: return guns.pistol
         case 2: return guns.shotgun
@@ -678,16 +846,16 @@ function waveSpawning() {
         if (wave.cooldown == 0) {
             const side = random("int", 1, 4)
             const type = random("int", 1, 3)
-            if (side == 1) enemylist.push(new Enemy(type, 50, 50));
-            if (side == 2) enemylist.push(new Enemy(type, 50, canvasSect.arenaHeight - 50));
-            if (side == 3) enemylist.push(new Enemy(type, canvasSect.arenaWidth - 50, canvasSect.arenaHeight - 50));
-            if (side == 4) enemylist.push(new Enemy(type, canvasSect.arenaWidth - 50, 50));
+            if (side == 1) enemyList.push(new Enemy(type, 50, 50));
+            if (side == 2) enemyList.push(new Enemy(type, 50, canvasSect.arenaHeight - 50));
+            if (side == 3) enemyList.push(new Enemy(type, canvasSect.arenaWidth - 50, canvasSect.arenaHeight - 50));
+            if (side == 4) enemyList.push(new Enemy(type, canvasSect.arenaWidth - 50, 50));
             wave.enemiesToSpawn--;
             wave.cooldown = 60
         }
         else wave.cooldown--;
     }
-    if (wave.enemiesToSpawn <= 0 && enemylist.length == 0) {
+    if (wave.enemiesToSpawn <= 0 && enemyList.length == 0) {
         wave.active = false;
         wave.completed++
     }
@@ -709,18 +877,18 @@ window.addEventListener('mousemove', (event) => {
 
 // Checks if key is down
 window.addEventListener('keydown', (event) => {
-    keypressed[event.key] = true;
+    keyPressed[event.key] = true;
     if (event.key == 'q') {
         if (event.repeat) return;
-        enemylist.push(new Enemy(1, 50, 50));
+        if (player.devMode) enemyList.push(new Enemy(1, 50, 50));
     }
     if (event.key == 'e') {
         if (event.repeat) return;
-        enemylist.push(new Enemy(2, 50, 50));
+        if (player.devMode) enemyList.push(new Enemy(2, 50, 50));
     }
     if (event.key == 'r') {
         if (event.repeat) return;
-        enemylist.push(new Enemy(3, 50, 50));
+        if (player.devMode) enemyList.push(new Enemy(3, 50, 50));
     }
     if (event.key == 'l' && !wave.active) {
         wave.enemiesToSpawn = Math.round(Math.sqrt(30 * (wave.completed + 1)));
@@ -731,23 +899,23 @@ window.addEventListener('keydown', (event) => {
         else if (player.devMode) player.devMode = false;
     }
     if (event.key == '0' && player.devMode) {
-        guntype = 0;
+        gunType = 0;
     }
     if (event.key == '1') {
-        guntype = 1;
+        gunType = 1;
     }
     if (event.key == '2') {
-        guntype = 2;
+        gunType = 2;
     }
     if (event.key == '3') {
-        guntype = 3;
+        gunType = 3;
     }
 });
 
 
 // Check if key is up
 window.addEventListener('keyup', (event) => {
-    keypressed[event.key] = false;
+    keyPressed[event.key] = false;
 });
 
 
@@ -761,9 +929,9 @@ window.addEventListener('click', (event) => {
             event.preventDefault();
 
             if (player.mouse.x >= 0 && player.mouse.x <= canvasSect.arenaWidth && player.mouse.y >= 0 && player.mouse.y <= canvasSect.arenaHeight) {
-                if (guntype == 0) {
+                if (gunType == 0) {
                     for (let i = 1; i <= guns.god.bulletSetup.count; i++) {
-                        bulletlist.push(new Bullet(0, player.pos.x, player.pos.y))
+                        bulletList.push(new Bullet(0, player.pos.x, player.pos.y))
                         guns.god.loaded--
                     }
                     timeSinceLastShot = 0
@@ -772,7 +940,7 @@ window.addEventListener('click', (event) => {
                 if (reloading == 0) {
                     if (timeSinceLastShot > currentGun.fireRate) {
                         for (let i = 1; i <= currentGun.bulletSetup.count; i++) {
-                            bulletlist.push(new Bullet(guntype, player.pos.x, player.pos.y));
+                            bulletList.push(new Bullet(gunType, player.pos.x, player.pos.y));
                         }
                         currentGun.loaded--
                         timeSinceLastShot = 0
@@ -784,10 +952,10 @@ window.addEventListener('click', (event) => {
 });
 
 
-// Prevents pop-up from opening
+// Prevents pop-up from opening (Right click)
 window.addEventListener('contextmenu', (event) => {
     event.preventDefault();
-    player.pos = new Vector(player.mouse.x, player.mouse.y);
+    if (player.devMode) player.pos = new Vector(player.mouse.x, player.mouse.y);
 });
 
 
