@@ -18,7 +18,11 @@ const canvasSect = {
     arenaWidth: null,
     arenaHeight: null,
     uiWidth: null,
-    uiHeight: null
+    uiHeight: null,
+    shakeX: null,
+    shakeY: null,
+    shakeTime: 0,
+    shakeStrength: 0
 }
 
 const iconPaths = {
@@ -26,7 +30,8 @@ const iconPaths = {
     goldBlob: 'icons/goldBlob.png',
     pistolBullet: 'icons/pistolBullet.png',
     shotgunBullet: 'icons/shotgunBullet.png',
-    sniperBullet: 'icons/sniperBullet.png'
+    sniperBullet: 'icons/sniperBullet.png',
+    pistolIcon: 'icons/pistol.png'
 }
 
 const icons = {};
@@ -236,7 +241,7 @@ class Drop {
     }
 
     display() {
-        ctx.drawImage(icons[this.data.image], this.pos.x, this.pos.y, this.data.width, this.data.height)
+        ctx.drawImage(icons[this.data.image], this.pos.x - this.data.width / 2, this.pos.y - this.data.height / 2, this.data.width, this.data.height)
     }
 
     collectCheck() {
@@ -459,6 +464,8 @@ const wave = {
     active: false
 }
 
+
+
 // Setup Function
 function setup() {
     canvas.width = window.innerWidth;
@@ -478,12 +485,24 @@ function draw() {
     ctx.fillStyle = 'rgb(100, 100, 100)';
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
+    // Shake screen
+    if (canvasSect.shakeTime > 0) {
+        canvasSect.shakeTime--;
+        canvasSect.shakeX = random("float", -canvasSect.shakeStrength, canvasSect.shakeStrength)
+        canvasSect.shakeY = random("float", -canvasSect.shakeStrength, canvasSect.shakeStrength)
+        canvasSect.shakeStrength *= 0.9
+    }
+
+    ctx.save();
+    ctx.translate(canvasSect.shakeX, canvasSect.shakeY)
+
     // Finds current gun
     currentGun = findCurrentGun()
 
     timeSinceLastShot++;
     if (player.immune > 0) player.immune--;
 
+    //Resets the gun to pistol if devmode ends and God gun was equipped
     if (gunType == 0 && !player.devMode) gunType = 1
 
     waveSpawning()
@@ -667,6 +686,7 @@ function draw() {
     }
 
     requestAnimationFrame(draw);
+    ctx.restore();
 }
 
 
@@ -828,7 +848,15 @@ function playercollision(enemy) {
     // Damage
     if (player.hp > 0) player.hp -= enemy.dam
 
+    // Apply screen shake
+    shakeScreen(10, 60)
 };
+
+// Define the screen shake
+function shakeScreen(strength, time) {
+    canvasSect.shakeStrength = strength
+    canvasSect.shakeTime = time
+}
 
 function findCurrentGun() {
     switch (gunType) {
@@ -893,6 +921,13 @@ window.addEventListener('keydown', (event) => {
     if (event.key == 'l' && !wave.active) {
         wave.enemiesToSpawn = Math.round(Math.sqrt(30 * (wave.completed + 1)));
         wave.active = true;
+    }
+    if (event.key == 'v') {
+        const getRandomDrop = obj => {
+            const keys = Object.keys(obj)
+            return keys[random("int", 0, keys.length - 1)];
+        }
+        dropList.push(new Drop(getRandomDrop(dropTypes), player.mouse.x, player.mouse.y))
     }
     if (event.key == '=') {
         if (!player.devMode) player.devMode = true;

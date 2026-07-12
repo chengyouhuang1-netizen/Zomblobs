@@ -78,5 +78,12 @@ v1.3.0-alpha
  - Added 2 new functions "pickUpItem" and "spawnDrops". "spawnDrops" responsible for setting up drops based on enemy loot table.
 "pickUpItem" responsible for running events that happen when player picks up the item
 
+v1.3.1-alpha
+----Game Features----
+ - Added screen shake when player is damaged
+ - Added the ability to spawn drops while in devmode. Use key "v" to spawn drop
 
+----Code Changes----
+ - Added 3 new icons to "icons" folder. To be used in later update
+ - Centred the drop icons to their position
 ====================End Changelog====================
