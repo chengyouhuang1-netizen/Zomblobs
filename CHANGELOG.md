@@ -75,7 +75,7 @@ v1.3.0-alpha
  - Added 2 key-value object for the icons. "iconPaths" stores the icon asset paths, while "icons" stores the loaded icons
  - Added key "loot" to all the enemy types
  - Added new key-value "dropTypes" object for drops
- - Added 2 new functions "pickUpItem" and "spawnDrops". "spawnDrops" responsible for setting up drops based on enemy loot table.
+ - Added 2 new functions "pickUpItem" and "spawnDrops". "spawnDrops" responsible for setting up drops based on enemy loot table
 "pickUpItem" responsible for running events that happen when player picks up the item
 
 v1.3.1-alpha
@@ -86,4 +86,32 @@ v1.3.1-alpha
 ----Code Changes----
  - Added 3 new icons to "icons" folder. To be used in later update
  - Centred the drop icons to their position
+
+v1.4.0-alpha
+----Game Features----
+ - Added shop page with items able to buy. Open using "z" key
+ - Shop items added along with cost:
+   Heal Blob - 10 Gold Blobs
+   Pistol Bullets - 8 Gold Blobs
+   Shotgun Bullets - 10 Gold Blobs
+   Sniper Bullets - 15 Gzold Blobs
+ - Added a glow around slot when hovered
+ - Added a counter for Gold Blobs next to health bar
+ - Spawning random drops using "v" now requires devmode to be enabled
+
+----Code Changes----
+ - Added 5 functions:
+   toggleShop() - Toggles shop by changing shop.open and shop.targetX
+   buyItem(num) - Returns if player doesn't enough Gold Blobs to buy selected item, changes player.goldBlobs and triggers onBuy()
+   isHoveringSlot(slot) - Returns if mouse is hovering over a slot
+   getSlotInfo(l) - Returns the x and y positions of a slot "l"
+   lerp(start, end, amt) - Returns a value that lies a specific percentage between two given numbers
+ - Added 2 key-value objects:
+   shop - Stores shop page, along with slot info
+   shopItems - Stores the info of individual items in the shop
+ - Added image widths, heights and ratios. Stored in "icons" object
+ - Moved draw() and setup() functions to image loading. Makes sure that images are properly loaded before display
+
+
+
 ====================End Changelog====================

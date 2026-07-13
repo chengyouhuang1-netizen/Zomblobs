@@ -45,9 +45,17 @@ Object.keys(iconPaths).forEach(key => {
 
     img.onload = () => {
         iconsLoadedCount++;
-        icons[key] = img
+        icons[key] = {
+            image: img,
+            width: img.naturalWidth,
+            height: img.naturalHeight,
+            aspectRatio: img.naturalWidth / img.naturalHeight
+        }
         if (iconsLoadedCount === iconsToLoad) {
             console.log("All icons loaded successfully.");
+            // Start the engine after all icons are loaded
+            setup();
+            draw();
         }
     }
 });
@@ -241,7 +249,7 @@ class Drop {
     }
 
     display() {
-        ctx.drawImage(icons[this.data.image], this.pos.x - this.data.width / 2, this.pos.y - this.data.height / 2, this.data.width, this.data.height)
+        ctx.drawImage(icons[this.data.image].image, this.pos.x - this.data.drawWidth / 2, this.pos.y - (this.data.drawWidth / icons[this.data.image].aspectRatio) / 2, this.data.drawWidth, this.data.drawWidth / icons[this.data.image].aspectRatio)
     }
 
     collectCheck() {
@@ -272,7 +280,7 @@ const player = {
     immune: 0,
     vel: new Vector(0, 0),
     mouse: new Vector(null, null),
-    devmode: false
+    devMode: false
 };
 
 const enemy = {
@@ -409,8 +417,7 @@ const dropTypes = {
         id: 1,
         image: 'healBlob',
         rad: 30,
-        width: 22,
-        height: 18,
+        drawWidth: 22,
         onPickup() {
             player.hp += 10
         }
@@ -419,8 +426,7 @@ const dropTypes = {
         id: 2,
         image: 'goldBlob',
         rad: 30,
-        width: 22,
-        height: 18,
+        drawWidth: 22,
         onPickup() {
             player.goldBlobs += 5
         }
@@ -429,8 +435,7 @@ const dropTypes = {
         id: 3,
         image: 'pistolBullet',
         rad: 30,
-        width: 20,
-        height: 18,
+        drawWidth: 20,
         onPickup() {
             guns.pistol.unloaded += 15
         }
@@ -439,8 +444,7 @@ const dropTypes = {
         id: 4,
         image: 'shotgunBullet',
         rad: 30,
-        width: 20,
-        height: 20,
+        drawWidth: 20,
         onPickup() {
             guns.shotgun.unloaded += 10
         }
@@ -449,8 +453,7 @@ const dropTypes = {
         id: 5,
         image: 'sniperBullet',
         rad: 30,
-        width: 20,
-        height: 30,
+        drawWidth: 20,
         onPickup() {
             guns.sniper.unloaded += 5
         }
@@ -464,6 +467,51 @@ const wave = {
     active: false
 }
 
+const shop = {
+    open: false,
+    width: 400,
+    targetX: null,
+    x: null,
+    slotSize: 80,
+    slotGap: 30,
+    slotStartX: 40,
+    slotStartY: 200
+}
+
+const shopItems = [
+    {
+        label: "Heal Blob",
+        desc: "+10 hp",
+        cost: 10,
+        icon: 'healBlob',
+        drawWidth: 45,
+        onBuy: () => player.hp += 10,
+    },
+    {
+        label: "Pistol Bullets",
+        desc: "+15 pistol bullets",
+        cost: 8,
+        icon: "pistolBullet",
+        drawWidth: 40,
+        onBuy: () => guns.pistol.unloaded += 15,
+    },
+    {
+        label: "Shotgun Bullets",
+        desc: "+8 shotgun bullets",
+        cost: 10,
+        icon: "shotgunBullet",
+        drawWidth: 40,
+        onBuy: () => guns.shotgun.unloaded += 8,
+    },
+    {
+        label: "Sniper Bullets",
+        desc: "+6 sniper bullets",
+        cost: 15,
+        icon: "sniperBullet",
+        drawWidth: 35,
+        onBuy: () => guns.sniper.unloaded += 6,
+    },
+];
 
 
 // Setup Function
@@ -476,6 +524,8 @@ function setup() {
     canvasSect.uiHeight = canvas.height - canvasSect.arenaHeight
     player.pos.x = canvasSect.arenaWidth / 2
     player.pos.y = canvasSect.arenaHeight / 2
+    shop.targetX = canvas.width
+    shop.x = canvas.width
 }
 
 
@@ -671,6 +721,15 @@ function draw() {
     ctx.fillStyle = 'rgb(165, 28, 18)';
     ctx.fillRect(50, canvasSect.arenaHeight + 50, 400 * (player.hp / player.maxHp), 10);
 
+    // Draw Gold Blob icon
+    ctx.drawImage(icons["goldBlob"].image, 600 - icons["goldBlob"].width / 2, canvasSect.arenaHeight + 50 - (icons["goldBlob"].height / 2), 50, 50 / icons["goldBlob"].aspectRatio)
+    ctx.font = '30px Impact';
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle"
+    ctx.fillStyle = 'rgb(255, 191, 0)';
+    ctx.fillText(player.goldBlobs, 650, canvasSect.arenaHeight + 55);
+
+
     // Draw stamina bar
     ctx.fillStyle = 'rgb(10, 38, 70)';
     ctx.fillRect(45, canvasSect.arenaHeight + 125, 410, 20);
@@ -685,6 +744,71 @@ function draw() {
         ctx.fillRect(1300, canvasSect.arenaHeight + 100, 250 - (reloading / currentReloadTime) * 250, 20);
     }
 
+    // Move shop page according to shop.targetX
+    shop.x = lerp(shop.x, shop.targetX, 0.20)
+
+    // Draw shop page
+    ctx.fillStyle = 'rgba(9, 9, 9, 0.8)'
+    ctx.fillRect(shop.x, 0, shop.width, canvas.height);
+    ctx.font = '60px Impact';
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillStyle = 'rgb(187, 187, 187)';
+    ctx.fillText("Shop", shop.x + 40, 40);
+
+    // Draw slots & description
+    for (let l = shopItems.length - 1; l >= 0; l--) {
+        const iconInfo = icons[shopItems[l].icon]
+        const iconWidth = shopItems[l].drawWidth
+        const iconHeight = shopItems[l].drawWidth / iconInfo.aspectRatio
+        let hovering = false
+
+        // Draw outline & shadow around slot when slot is hovered
+        if (isHoveringSlot(getSlotInfo(l))) {
+            ctx.strokeStyle = "rgb(255, 196, 0)"
+            ctx.lineWidth = 5
+            ctx.strokeRect(getSlotInfo(l).x, getSlotInfo(l).y, shop.slotSize, shop.slotSize);
+            ctx.shadowColor = "rgba(255, 204, 0, 0.8)";
+            ctx.shadowBlur = 30;
+        }
+
+        ctx.fillStyle = 'rgb(189, 152, 11)'
+        ctx.fillRect(getSlotInfo(l).x, getSlotInfo(l).y, shop.slotSize, shop.slotSize)
+        ctx.shadowBlur = 0;
+
+        // Draw icon in shop
+        ctx.drawImage(
+            iconInfo.image,
+            getSlotInfo(l).x + (shop.slotSize - iconWidth) / 2,
+            getSlotInfo(l).y + (shop.slotSize - iconHeight) / 2,
+            iconWidth,
+            iconHeight
+        );
+
+        // Draw item title
+        ctx.font = '25px Impact';
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillStyle = 'rgb(151, 151, 151)';
+        ctx.fillText(shopItems[l].label, getSlotInfo(l).x + shop.slotGap + shop.slotSize, getSlotInfo(l).y + 5);
+
+        // Draw item description
+        ctx.font = '18px Impact';
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillStyle = 'rgb(151, 151, 151)';
+        ctx.fillText(shopItems[l].desc, getSlotInfo(l).x + shop.slotGap + shop.slotSize, getSlotInfo(l).y + 35);
+
+        // Draw Gold Blob next to cost
+        ctx.drawImage(icons["goldBlob"].image, getSlotInfo(l).x + shop.slotGap + shop.slotSize, getSlotInfo(l).y + 60, 20, 20 / icons["goldBlob"].aspectRatio)
+
+        // Write cost
+        ctx.font = '18px Impact';
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top"
+        ctx.fillStyle = 'rgb(255, 191, 0)';
+        ctx.fillText(shopItems[l].cost, getSlotInfo(l).x + shop.slotGap + shop.slotSize + 25, getSlotInfo(l).y + 60);
+    }
     requestAnimationFrame(draw);
     ctx.restore();
 }
@@ -889,6 +1013,38 @@ function waveSpawning() {
     }
 }
 
+// If shop is opened, targetX will be set to shop width, and set to canvas width if shop is closed
+function toggleShop() {
+    shop.open = !shop.open
+    shop.targetX = shop.open ? canvas.width - shop.width : canvas.width
+}
+
+function buyItem(num) {
+    if (player.goldBlobs < shopItems[num].cost) return
+    player.goldBlobs -= shopItems[num].cost
+    shopItems[num].onBuy()
+}
+
+// Returns if mouse is hovering over slot
+function isHoveringSlot(slot) {
+    return (
+        shop.open &&
+        player.mouse.x >= slot.x &&
+        player.mouse.y >= slot.y &&
+        player.mouse.x <= slot.x + shop.slotSize &&
+        player.mouse.y <= slot.y + shop.slotSize
+    )
+}
+
+function getSlotInfo(l) {
+    return {
+        x: shop.slotStartX + shop.x,
+        y: shop.slotStartY + l * (shop.slotGap + shop.slotSize),
+    }
+}
+
+const lerp = (start, end, amt) => (1 - amt) * start + amt * end
+
 // Handle window resizing
 window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
@@ -923,11 +1079,15 @@ window.addEventListener('keydown', (event) => {
         wave.active = true;
     }
     if (event.key == 'v') {
+        if (!player.devMode) return
         const getRandomDrop = obj => {
             const keys = Object.keys(obj)
             return keys[random("int", 0, keys.length - 1)];
         }
         dropList.push(new Drop(getRandomDrop(dropTypes), player.mouse.x, player.mouse.y))
+    }
+    if (event.key == 'z') {
+        toggleShop()
     }
     if (event.key == '=') {
         if (!player.devMode) player.devMode = true;
@@ -963,6 +1123,15 @@ window.addEventListener('click', (event) => {
         case 0: // Left click
             event.preventDefault();
 
+            if (shop.open === true && player.mouse.x >= shop.x) {
+                for (let l = shopItems.length - 1; l >= 0; l--) {
+                    if (isHoveringSlot(getSlotInfo(l))) {
+                        buyItem(l)
+                    }
+                }
+                break;
+            }
+
             if (player.mouse.x >= 0 && player.mouse.x <= canvasSect.arenaWidth && player.mouse.y >= 0 && player.mouse.y <= canvasSect.arenaHeight) {
                 if (gunType == 0) {
                     for (let i = 1; i <= guns.god.bulletSetup.count; i++) {
@@ -992,8 +1161,3 @@ window.addEventListener('contextmenu', (event) => {
     event.preventDefault();
     if (player.devMode) player.pos = new Vector(player.mouse.x, player.mouse.y);
 });
-
-
-// Start the engine
-setup();
-draw();
