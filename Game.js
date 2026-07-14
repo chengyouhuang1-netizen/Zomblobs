@@ -22,7 +22,9 @@ const canvasSect = {
     shakeX: null,
     shakeY: null,
     shakeTime: 0,
-    shakeStrength: 0
+    shakeStrength: 0,
+    tintStrength: 0,
+    pulseSpeed: 0
 }
 
 const iconPaths = {
@@ -101,58 +103,19 @@ class Vector {
 
 class Bullet {
     constructor(preset, x, y, speed, damage, size, time, count, spread, target, colour) {
-        if (preset == 0) {
-            speed = guns.god.bulletSetup.speed
-            damage = guns.god.bulletSetup.damage
-            size = guns.god.bulletSetup.size
-            time = guns.god.bulletSetup.time
-            count = guns.god.bulletSetup.count
-            spread = guns.god.bulletSetup.spread
-            target = new Vector(player.mouse.x, player.mouse.y)
-            colour = guns.god.bulletSetup.colour
-        }
-        if (preset == 1) {
-            speed = guns.pistol.bulletSetup.speed
-            damage = guns.pistol.bulletSetup.damage
-            size = guns.pistol.bulletSetup.size
-            time = guns.pistol.bulletSetup.time
-            count = guns.pistol.bulletSetup.count
-            spread = guns.pistol.bulletSetup.spread
-            target = new Vector(player.mouse.x, player.mouse.y)
-            colour = guns.pistol.bulletSetup.colour
-        }
-        if (preset == 2) {
-            speed = guns.shotgun.bulletSetup.speed
-            damage = guns.shotgun.bulletSetup.damage
-            size = guns.shotgun.bulletSetup.size
-            time = guns.shotgun.bulletSetup.time
-            count = guns.shotgun.bulletSetup.count
-            spread = guns.shotgun.bulletSetup.spread
-            target = new Vector(player.mouse.x, player.mouse.y)
-            colour = guns.shotgun.bulletSetup.colour
 
-        }
-        if (preset == 3) {
-            speed = guns.sniper.bulletSetup.speed
-            damage = guns.sniper.bulletSetup.damage
-            size = guns.sniper.bulletSetup.size
-            time = guns.sniper.bulletSetup.time
-            count = guns.sniper.bulletSetup.count
-            spread = guns.sniper.bulletSetup.spread
-            target = new Vector(player.mouse.x, player.mouse.y)
-            colour = guns.sniper.bulletSetup.colour
-        }
+        this.bulletSetup = guns[preset].bulletSetup;
+
         this.preset = preset;
-        this.time = time;
-        this.dam = damage;
-        this.colour = colour;
-        this.speed = speed;
-        this.size = size;
-        this.time = time;
-        this.count = count;
-        this.spread = spread;
-        this.target = target
         this.pos = new Vector(x, y);
+        this.speed = this.bulletSetup.speed;
+        this.dam = this.bulletSetup.damage;
+        this.size = this.bulletSetup.size;
+        this.time = this.bulletSetup.time;
+        this.count = this.bulletSetup.count;
+        this.spread = this.bulletSetup.spread;
+        this.target = new Vector(player.mouse.x, player.mouse.y);
+        this.colour = this.bulletSetup.colour;
         this.angle = Math.atan2(player.mouse.y - this.pos.y, player.mouse.x - this.pos.x) + random("float", this.spread * -1, this.spread);
         this.dir = new Vector(Math.cos(this.angle), Math.sin(this.angle)).mult(this.speed);
     }
@@ -174,44 +137,20 @@ class Bullet {
 
 class Enemy {
     constructor(preset, x, y, hp, dam, speed, size, mass, colour) {
-        if (preset == 1) {
-            speed = enemy.norm.speed
-            this.type = "norm"
-            hp = enemy.norm.hp
-            dam = enemy.norm.dam
-            size = enemy.norm.size
-            mass = enemy.norm.mass
-            colour = enemy.norm.colour
-        }
-        if (preset == 2) {
-            speed = enemy.small.speed
-            this.type = "small"
-            hp = enemy.small.hp
-            dam = enemy.small.dam
-            size = enemy.small.size
-            mass = enemy.small.mass
-            colour = enemy.small.colour
-        }
-        if (preset == 3) {
-            speed = enemy.big.speed
-            this.type = "big"
-            hp = enemy.big.hp
-            dam = enemy.big.dam
-            size = enemy.big.size
-            mass = enemy.big.mass
-            colour = enemy.big.colour
-        }
-        this.colour = colour;
-        this.size = size;
-        this.hp = hp;
-        this.dam = dam
-        this.speed = speed;
-        this.size = size;
-        this.mass = mass;
-        this.hitTimer = 0
-        this.loot = enemy[this.type].loot
+
+        preset -= 1
+
+        this.preset = preset
         this.pos = new Vector(x, y);
         this.vel = new Vector(0, 0);
+        this.hp = enemy[preset].hp;
+        this.dam = enemy[preset].dam
+        this.speed = enemy[preset].speed;
+        this.size = enemy[preset].size;
+        this.mass = enemy[preset].mass;
+        this.colour = enemy[preset].colour;
+        this.hitTimer = 0
+        this.loot = enemy[preset].loot
     }
     display() {
         ctx.beginPath();
@@ -283,10 +222,10 @@ const player = {
     devMode: false
 };
 
-const enemy = {
-    norm: {
-        id: 1,
-        speed: 0.5,
+const enemy = [
+    {
+        name: "norm",
+        speed: 0.67,
         hp: 100,
         dam: 20,
         size: 20,
@@ -300,8 +239,8 @@ const enemy = {
         ],
         colour: '#075518'
     },
-    small: {
-        id: 2,
+    {
+        name: "small",
         speed: 0.6,
         hp: 20,
         dam: 10,
@@ -315,10 +254,10 @@ const enemy = {
         ],
         colour: '#0a8a26'
     },
-    big: {
-        id: 3,
-        speed: 0.4,
-        hp: 250,
+    {
+        name: "big",
+        speed: 0.6,
+        hp: 200,
         dam: 40,
         size: 40,
         mass: 100,
@@ -331,11 +270,11 @@ const enemy = {
         ],
         colour: '#04380f'
     }
-}
+]
 
-const guns = {
-    god: {
-        id: 0,
+const guns = [
+    {
+        name: "god",
         reloadTime: 0,
         fireRate: 0,
         magRounds: 100,
@@ -353,8 +292,8 @@ const guns = {
             colour: '#fb00ff'
         }
     },
-    pistol: {
-        id: 1,
+    {
+        name: "pistol",
         reloadTime: 70,
         fireRate: 15,
         magRounds: 10,
@@ -372,8 +311,8 @@ const guns = {
             colour: '#000000'
         }
     },
-    shotgun: {
-        id: 2,
+    {
+        name: "shotgun",
         reloadTime: 240,
         fireRate: 60,
         magRounds: 5,
@@ -391,8 +330,8 @@ const guns = {
             colour: '#000000'
         }
     },
-    sniper: {
-        id: 3,
+    {
+        name: "sniper",
         reloadTime: 360,
         fireRate: 120,
         magRounds: 2,
@@ -410,7 +349,8 @@ const guns = {
             colour: '#000000'
         }
     }
-}
+]
+
 
 const dropTypes = {
     healBlob: {
@@ -437,7 +377,7 @@ const dropTypes = {
         rad: 30,
         drawWidth: 20,
         onPickup() {
-            guns.pistol.unloaded += 15
+            guns[1].unloaded += 15
         }
     },
     shotgunBullet: {
@@ -446,7 +386,7 @@ const dropTypes = {
         rad: 30,
         drawWidth: 20,
         onPickup() {
-            guns.shotgun.unloaded += 10
+            guns[2].unloaded += 10
         }
     },
     sniperBullet: {
@@ -455,7 +395,7 @@ const dropTypes = {
         rad: 30,
         drawWidth: 20,
         onPickup() {
-            guns.sniper.unloaded += 5
+            guns[3].unloaded += 5
         }
     }
 }
@@ -501,7 +441,7 @@ const shopItems = [
         cost: 10,
         icon: "shotgunBullet",
         drawWidth: 40,
-        onBuy: () => guns.shotgun.unloaded += 8,
+        onBuy: () => guns[2].unloaded += 8,
     },
     {
         label: "Sniper Bullets",
@@ -509,7 +449,7 @@ const shopItems = [
         cost: 15,
         icon: "sniperBullet",
         drawWidth: 35,
-        onBuy: () => guns.sniper.unloaded += 6,
+        onBuy: () => guns[3].unloaded += 6,
     },
 ];
 
@@ -756,6 +696,9 @@ function draw() {
     ctx.fillStyle = 'rgb(187, 187, 187)';
     ctx.fillText("Shop", shop.x + 40, 40);
 
+    // Resets cursor style to default when not hovering over a slot
+    document.body.style.cursor = 'default';
+
     // Draw slots & description
     for (let l = shopItems.length - 1; l >= 0; l--) {
         const iconInfo = icons[shopItems[l].icon]
@@ -770,6 +713,8 @@ function draw() {
             ctx.strokeRect(getSlotInfo(l).x, getSlotInfo(l).y, shop.slotSize, shop.slotSize);
             ctx.shadowColor = "rgba(255, 204, 0, 0.8)";
             ctx.shadowBlur = 30;
+
+            document.body.style.cursor = 'pointer';
         }
 
         ctx.fillStyle = 'rgb(189, 152, 11)'
@@ -809,6 +754,29 @@ function draw() {
         ctx.fillStyle = 'rgb(255, 191, 0)';
         ctx.fillText(shopItems[l].cost, getSlotInfo(l).x + shop.slotGap + shop.slotSize + 25, getSlotInfo(l).y + 60);
     }
+
+    if (player.hp <= player.maxHp / 3) canvasSect.tintStrength = 1 - (player.hp / (player.maxHp / 3)) 
+    else canvasSect.tintStrength = 0
+
+    const gradient = ctx.createRadialGradient(
+        canvas.width / 2,
+        canvas.height / 2,
+        10,
+        canvas.width / 2, 
+        canvas.height / 2, 1800
+    );
+
+    canvasSect.pulseSpeed += 0.05 + canvasSect.tintStrength / 10
+    const pulseTint = 0.75 + Math.sin(canvasSect.pulseSpeed) * 0.25
+
+    gradient.addColorStop(0, "rgba(255, 0, 0, 0)");
+    gradient.addColorStop(0.5, `rgba(255, 0, 0, ${lerp(0, canvasSect.tintStrength, pulseTint * 0.4)})`);
+    gradient.addColorStop(1, `rgba(255, 0, 0, ${lerp(0, canvasSect.tintStrength, pulseTint * 0.8)})`);
+
+    // Apply to shape and draw
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
     requestAnimationFrame(draw);
     ctx.restore();
 }
@@ -984,10 +952,10 @@ function shakeScreen(strength, time) {
 
 function findCurrentGun() {
     switch (gunType) {
-        case 0: return guns.god
-        case 1: return guns.pistol
-        case 2: return guns.shotgun
-        case 3: return guns.sniper
+        case 0: return guns[0]
+        case 1: return guns[1]
+        case 2: return guns[2]
+        case 3: return guns[3]
     }
 }
 
@@ -1134,9 +1102,9 @@ window.addEventListener('click', (event) => {
 
             if (player.mouse.x >= 0 && player.mouse.x <= canvasSect.arenaWidth && player.mouse.y >= 0 && player.mouse.y <= canvasSect.arenaHeight) {
                 if (gunType == 0) {
-                    for (let i = 1; i <= guns.god.bulletSetup.count; i++) {
+                    for (let i = 1; i <= guns[0].bulletSetup.count; i++) {
                         bulletList.push(new Bullet(0, player.pos.x, player.pos.y))
-                        guns.god.loaded--
+                        guns[0].loaded--
                     }
                     timeSinceLastShot = 0
                 }

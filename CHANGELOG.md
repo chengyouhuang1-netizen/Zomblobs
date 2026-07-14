@@ -81,7 +81,7 @@ v1.3.0-alpha
 v1.3.1-alpha
 ----Game Features----
  - Added screen shake when player is damaged
- - Added the ability to spawn drops while in devmode. Use key "v" to spawn drop
+ - Added the ability to spawn drops. Use key "v" to spawn drop
 
 ----Code Changes----
  - Added 3 new icons to "icons" folder. To be used in later update
@@ -112,6 +112,20 @@ v1.4.0-alpha
  - Added image widths, heights and ratios. Stored in "icons" object
  - Moved draw() and setup() functions to image loading. Makes sure that images are properly loaded before display
 
+ v1.4.1-alpha
+----Game Features----
+ - Added pulsating damage tint when health is less than 30% of max health
+ - Tint gets stronger the less health player has
+ - Pulse faster the less health player has
+ - Mouse cursor now changes to pointer when hovering over slots in shop
+ - Changed the following stats of enemies:
+   Normal zomblob speed: 0.5 -> 0.67
+   Big zomblob speed: 0.4 -> 0.6
+   Big zomblob health: 250 -> 200
+
+----Code Changes----
+ - Changed "guns" and "enemy" key-value objects to arrays to improve efficiency and simplicity in code
+ - Generalised assigning variables in constructor() of "Bullet" and "Enemy" class
 
 
 ====================End Changelog====================
