@@ -112,7 +112,7 @@ v1.4.0-alpha
  - Added image widths, heights and ratios. Stored in "icons" object
  - Moved draw() and setup() functions to image loading. Makes sure that images are properly loaded before display
 
- v1.4.1-alpha
+v1.4.1-alpha
 ----Game Features----
  - Added pulsating damage tint when health is less than 30% of max health
  - Tint gets stronger the less health player has
@@ -126,6 +126,27 @@ v1.4.0-alpha
 ----Code Changes----
  - Changed "guns" and "enemy" key-value objects to arrays to improve efficiency and simplicity in code
  - Generalised assigning variables in constructor() of "Bullet" and "Enemy" class
+
+v1.4.2-alpha
+----Game Features----
+ - Added icon of currently equipped gun next to health bar
+ - Added ammo counter next to gun selected icon
+ - Visually moved reload bar under the ammo counter
+ - Visually moved Gold Blob counter next to stamina bar
+ - Added a darker part of UI. Prevents gun icons from blending in with UI
+ - Added buttons to the tabs of the shop (Yet to be functional)
+ - Normal zomblob speed has been changed from 0.67 to 0.55
+ - Sniper damage has been changed from 250 to 300
+ - Player speed has been changed from 0.7 to 0.6
+
+----Code Changes----
+ - Added 3 icons to "iconpaths" object
+ - Added tab name to first index of object "shopItems"
+ - Renamed "pistol", "shotgun" and "sniper" files in "icons" folder to "pistolIcon", "shotgunIcon" and "sniperIcon" respectively
+
+----Bug Fixes----
+ - Resolved bug where shop would glich if key "z" was held down
+ - Fixed bug where bullets were not able to be spliced in the same frame
 
 
 ====================End Changelog====================

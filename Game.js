@@ -27,23 +27,31 @@ const canvasSect = {
     pulseSpeed: 0
 }
 
+
 const iconPaths = {
     healBlob: 'icons/healBlob.png',
     goldBlob: 'icons/goldBlob.png',
     pistolBullet: 'icons/pistolBullet.png',
     shotgunBullet: 'icons/shotgunBullet.png',
     sniperBullet: 'icons/sniperBullet.png',
-    pistolIcon: 'icons/pistol.png'
+    godIcon: 'icons/godIcon.png',
+    pistolIcon: 'icons/pistolIcon.png',
+    shotgunIcon: 'icons/shotgunIcon.png',
+    sniperIcon: 'icons/sniperIcon.png'
 }
 
+
 const icons = {};
+
 
 let iconsLoadedCount = 0
 const iconsToLoad = Object.keys(iconPaths).length
 
+
 Object.keys(iconPaths).forEach(key => {
     const img = new Image();
     img.src = iconPaths[key];
+
 
     img.onload = () => {
         iconsLoadedCount++;
@@ -61,6 +69,7 @@ Object.keys(iconPaths).forEach(key => {
         }
     }
 });
+
 
 class Vector {
     constructor(x = 0, y = 0) {
@@ -101,10 +110,14 @@ class Vector {
 }
 
 
+
+
 class Bullet {
     constructor(preset, x, y, speed, damage, size, time, count, spread, target, colour) {
 
+
         this.bulletSetup = guns[preset].bulletSetup;
+
 
         this.preset = preset;
         this.pos = new Vector(x, y);
@@ -135,10 +148,14 @@ class Bullet {
 }
 
 
+
+
 class Enemy {
     constructor(preset, x, y, hp, dam, speed, size, mass, colour) {
 
+
         preset -= 1
+
 
         this.preset = preset
         this.pos = new Vector(x, y);
@@ -175,6 +192,7 @@ class Enemy {
     }
 }
 
+
 class Drop {
     constructor(type = null, x = null, y = null) {
         this.type = type
@@ -187,9 +205,11 @@ class Drop {
         this.impulseTimer = 10
     }
 
+
     display() {
         ctx.drawImage(icons[this.data.image].image, this.pos.x - this.data.drawWidth / 2, this.pos.y - (this.data.drawWidth / icons[this.data.image].aspectRatio) / 2, this.data.drawWidth, this.data.drawWidth / icons[this.data.image].aspectRatio)
     }
+
 
     collectCheck() {
         this.dir = new Vector(player.pos.x - this.pos.x, player.pos.y - this.pos.y)
@@ -201,15 +221,18 @@ class Drop {
             this.vel.mult(0.75);
         }
 
+
     }
 }
+
+
 
 
 const player = {
     moveDir: new Vector(0, 0),
     pos: new Vector(null, null),
     size: 20,
-    speed: 0.7,
+    speed: 0.6,
     mass: 75,
     goldBlobs: 0,
     hp: 100,
@@ -222,10 +245,11 @@ const player = {
     devMode: false
 };
 
+
 const enemy = [
     {
         name: "norm",
-        speed: 0.67,
+        speed: 0.55,
         hp: 100,
         dam: 20,
         size: 20,
@@ -272,9 +296,11 @@ const enemy = [
     }
 ]
 
+
 const guns = [
     {
-        name: "god",
+        name: "Godgun",
+        iconName: "godIcon",
         reloadTime: 0,
         fireRate: 0,
         magRounds: 100,
@@ -293,7 +319,8 @@ const guns = [
         }
     },
     {
-        name: "pistol",
+        name: "Pistol",
+        iconName: "pistolIcon",
         reloadTime: 70,
         fireRate: 15,
         magRounds: 10,
@@ -312,7 +339,8 @@ const guns = [
         }
     },
     {
-        name: "shotgun",
+        name: "Shotgun",
+        iconName: "shotgunIcon",
         reloadTime: 240,
         fireRate: 60,
         magRounds: 5,
@@ -331,7 +359,8 @@ const guns = [
         }
     },
     {
-        name: "sniper",
+        name: "Sniper",
+        iconName: "sniperIcon",
         reloadTime: 360,
         fireRate: 120,
         magRounds: 2,
@@ -341,7 +370,7 @@ const guns = [
             x: player.pos.x,
             y: player.pos.y,
             speed: 15,
-            damage: 250,
+            damage: 300,
             size: 4,
             time: 200,
             count: 1,
@@ -350,6 +379,8 @@ const guns = [
         }
     }
 ]
+
+
 
 
 const dropTypes = {
@@ -400,12 +431,14 @@ const dropTypes = {
     }
 }
 
+
 const wave = {
     completed: 0,
     enemiesToSpawn: 0,
     cooldown: 0,
     active: false
 }
+
 
 const shop = {
     open: false,
@@ -415,43 +448,61 @@ const shop = {
     slotSize: 80,
     slotGap: 30,
     slotStartX: 40,
-    slotStartY: 200
+    slotStartY: 200,
+    currentTab: 0
 }
 
+
 const shopItems = [
-    {
-        label: "Heal Blob",
-        desc: "+10 hp",
-        cost: 10,
-        icon: 'healBlob',
-        drawWidth: 45,
-        onBuy: () => player.hp += 10,
-    },
-    {
-        label: "Pistol Bullets",
-        desc: "+15 pistol bullets",
-        cost: 8,
-        icon: "pistolBullet",
-        drawWidth: 40,
-        onBuy: () => guns.pistol.unloaded += 15,
-    },
-    {
-        label: "Shotgun Bullets",
-        desc: "+8 shotgun bullets",
-        cost: 10,
-        icon: "shotgunBullet",
-        drawWidth: 40,
-        onBuy: () => guns[2].unloaded += 8,
-    },
-    {
-        label: "Sniper Bullets",
-        desc: "+6 sniper bullets",
-        cost: 15,
-        icon: "sniperBullet",
-        drawWidth: 35,
-        onBuy: () => guns[3].unloaded += 6,
-    },
+    [
+        "Items",
+        {
+            label: "Heal Blob",
+            desc: "+10 hp",
+            cost: 10,
+            icon: 'healBlob',
+            drawWidth: 45,
+            onBuy: () => player.hp += 10,
+        },
+        {
+            label: "Pistol Bullets",
+            desc: "+15 pistol bullets",
+            cost: 8,
+            icon: "pistolBullet",
+            drawWidth: 40,
+            onBuy: () => guns[1].unloaded += 15,
+        },
+        {
+            label: "Shotgun Bullets",
+            desc: "+8 shotgun bullets",
+            cost: 10,
+            icon: "shotgunBullet",
+            drawWidth: 40,
+            onBuy: () => guns[2].unloaded += 8,
+        },
+        {
+            label: "Sniper Bullets",
+            desc: "+6 sniper bullets",
+            cost: 15,
+            icon: "sniperBullet",
+            drawWidth: 35,
+            onBuy: () => guns[3].unloaded += 6,
+        },
+    ],
+    [
+        "Weapon Smith",
+        {
+            label: "Pistol Upgrade",
+            desc: "Upgrades your pistol",
+            cost: 10,
+            icon: 'pistolIcon',
+            drawWidth: 45,
+            onBuy: () => player.hp += 10,
+        },
+    ],
 ];
+
+
 
 
 // Setup Function
@@ -469,11 +520,14 @@ function setup() {
 }
 
 
+
+
 // Draw Function (Runs continuously)
 function draw() {
     // Clear background every frame
     ctx.fillStyle = 'rgb(100, 100, 100)';
     ctx.fillRect(0, 0, canvas.width, canvas.height)
+
 
     // Shake screen
     if (canvasSect.shakeTime > 0) {
@@ -483,24 +537,31 @@ function draw() {
         canvasSect.shakeStrength *= 0.9
     }
 
+
     ctx.save();
     ctx.translate(canvasSect.shakeX, canvasSect.shakeY)
+
 
     // Finds current gun
     currentGun = findCurrentGun()
 
+
     timeSinceLastShot++;
     if (player.immune > 0) player.immune--;
+
 
     //Resets the gun to pistol if devmode ends and God gun was equipped
     if (gunType == 0 && !player.devMode) gunType = 1
 
+
     waveSpawning()
+
 
     // Drops display
     for (let k = dropList.length - 1; k >= 0; k--) {
         dropList[k].display()
         dropList[k].collectCheck()
+
 
         if (dropList[k].impulseTimer > 0) {
             dropList[k].impulseTimer--;
@@ -509,24 +570,13 @@ function draw() {
             dropList[k].pos.add(dropList[k].vel)
         }
 
+
         if (dropList[k].dist <= dropList[k].rad + player.size && dropList[k].impulseTimer == 0) {
             pickUpItem(dropList[k].type)
             dropList.splice(k, 1)
         };
     }
 
-
-    // Checks if hp is below 0
-    if (player.hp <= 0) {
-        ctx.fillStyle = 'rgba(19, 19, 19, 0.65)';
-        ctx.fillRect(0, canvas.height / 3, canvas.width, canvas.height / 3)
-        ctx.font = '60px Optimus_Princeps';
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle"
-        ctx.fillStyle = 'rgb(169, 0, 0)';
-        ctx.fillText("You Died", canvas.width / 2, canvas.height / 2)
-        return;
-    }
 
     // Sprint
     if (keyPressed['w'] || keyPressed['a'] || keyPressed['s'] || keyPressed['d']) {
@@ -535,14 +585,15 @@ function draw() {
             player.sta -= 0.5;
         }
         else {
-            player.speed = 0.7
+            player.speed = 0.6
             if (player.sta < player.maxSta) player.sta += 0.2
         }
     }
     else {
-        player.speed = 0.7
+        player.speed = 0.6
         if (player.sta < player.maxSta) player.sta += 1 / 3
     }
+
 
     // Update coordinates based on key presses
     player.moveDir.x = 0;
@@ -552,11 +603,14 @@ function draw() {
     if (keyPressed['a'] && player.pos.x >= 0 + player.size) player.moveDir.x -= 1;
     if (keyPressed['d'] && player.pos.x <= canvasSect.arenaWidth - player.size) player.moveDir.x += 1;
 
+
     // If player is out of the border, it is sent back in
     if (player.pos.x < 0 + player.size) player.pos.x = 0 + player.size;
     if (player.pos.y < 0 + player.size) player.pos.y = 0 + player.size;
     if (player.pos.x > canvasSect.arenaWidth - player.size) player.pos.x = canvasSect.arenaWidth - player.size;
     if (player.pos.y > canvasSect.arenaHeight - player.size) player.pos.y = canvasSect.arenaHeight - player.size;
+
+
 
 
     // Player movement
@@ -567,6 +621,8 @@ function draw() {
     }
     player.pos.add(player.vel);
     player.vel.mult(0.75); // friction
+
+
 
 
     // Enemy movement, display and collision
@@ -580,22 +636,27 @@ function draw() {
         playercollision(enemyList[i]);
     }
 
+
     // Resolve collisions after updating all enemy positions
     enemycollision(enemyList);
 
+
     // Bullet movement, display, and collision
     for (let j = bulletList.length - 1; j >= 0; j--) {
+
 
         bulletList[j].movement();
         bulletList[j].display();
         if (bulletList[j].died()) {
             bulletList.splice(j, 1);
-            break;
+            continue;
         }
+
 
         // Bullet and enemy collision
         for (let i = enemyList.length - 1; i >= 0; i--) {
             if (hit(bulletList[j], enemyList[i])) {
+
 
                 enemyList[i].hitTimer = 5
                 const enemyknockback = new Vector(enemyList[i].pos.x - bulletList[j].pos.x, enemyList[i].pos.y - bulletList[j].pos.y)
@@ -603,12 +664,10 @@ function draw() {
                 enemyknockback.mult(150 / enemyList[i].mass)
                 enemyList[i].vel.add(enemyknockback)
 
-
-
                 if (enemyList[i].hp > bulletList[j].dam) {
                     enemyList[i].hp -= bulletList[j].dam;
                     bulletList.splice(j, 1);
-                    break;
+                    continue;
                 }
                 else if (enemyList[i].hp == bulletList[j].dam) {
                     bulletList.splice(j, 1);
@@ -626,6 +685,7 @@ function draw() {
         }
     }
 
+
     // Player and enemy collision detection
     if (reloading > 0) {
         reloading--;
@@ -637,10 +697,12 @@ function draw() {
         }
     }
 
+
     if (currentGun.loaded <= 0 && reloading == 0) {
         reloading = currentGun.reloadTime
         currentReloadTime = currentGun.reloadTime
     }
+
 
     // Draw player
     ctx.beginPath();
@@ -650,9 +712,16 @@ function draw() {
     if (player.devMode) ctx.fillStyle = '#fbff00';
     ctx.fill();
 
+
     // Draw UI
-    ctx.fillStyle = 'rgb(169, 169, 169)';
+    ctx.fillStyle = 'rgb(170, 170, 170)';
     ctx.fillRect(0, canvasSect.arenaHeight, canvasSect.uiWidth, 200);
+
+
+    // Draw gun part of UI
+    ctx.fillStyle = 'rgb(20, 20, 20)';
+    ctx.fillRect(750, canvasSect.arenaHeight, canvasSect.uiWidth - 750 - shop.width, 200);
+
 
     // Draw health bar
     if (player.hp > player.maxHp) player.hp = player.maxHp
@@ -661,14 +730,6 @@ function draw() {
     ctx.fillStyle = 'rgb(165, 28, 18)';
     ctx.fillRect(50, canvasSect.arenaHeight + 50, 400 * (player.hp / player.maxHp), 10);
 
-    // Draw Gold Blob icon
-    ctx.drawImage(icons["goldBlob"].image, 600 - icons["goldBlob"].width / 2, canvasSect.arenaHeight + 50 - (icons["goldBlob"].height / 2), 50, 50 / icons["goldBlob"].aspectRatio)
-    ctx.font = '30px Impact';
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle"
-    ctx.fillStyle = 'rgb(255, 191, 0)';
-    ctx.fillText(player.goldBlobs, 650, canvasSect.arenaHeight + 55);
-
 
     // Draw stamina bar
     ctx.fillStyle = 'rgb(10, 38, 70)';
@@ -676,16 +737,38 @@ function draw() {
     ctx.fillStyle = 'rgb(18, 106, 165)';
     ctx.fillRect(50, canvasSect.arenaHeight + 130, 400 * (player.sta / player.maxSta), 10);
 
+
     // Draw reload bar
     if (reloading > 0) {
         ctx.fillStyle = 'rgb(209, 157, 0)';
-        ctx.fillRect(1295, canvasSect.arenaHeight + 95, 260, 30);
+        ctx.fillRect(1000, canvasSect.arenaHeight + 135, canvasSect.uiWidth - 1000 - shop.width - 40, 20);
         ctx.fillStyle = 'rgb(209, 185, 0)';
-        ctx.fillRect(1300, canvasSect.arenaHeight + 100, 250 - (reloading / currentReloadTime) * 250, 20);
+        ctx.fillRect(1005, canvasSect.arenaHeight + 140, 235 - ((reloading / currentReloadTime) * (canvasSect.uiWidth - 1000 - shop.width - 40)), 10);
     }
+
+
+    // Draw selected gun icon
+    makeImage(icons[findCurrentGun().iconName].image, 900, canvasSect.arenaHeight + 100, -Math.PI / 8, 130, 130 / icons[findCurrentGun().iconName].aspectRatio)
+    ctx.font = '30px Impact';
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle"
+    ctx.fillStyle = 'rgb(202, 202, 202)';
+    ctx.fillText(findCurrentGun().name, 1000, canvasSect.arenaHeight + 70);
+    ctx.fillText(`${findCurrentGun().loaded} / ${findCurrentGun().unloaded}`, 1000, canvasSect.arenaHeight + 110);
+
+
+    // Draw Gold Blob icon
+    makeImage(icons["goldBlob"].image, 600, canvasSect.arenaHeight + 130, 0, 50, 50 / icons["goldBlob"].aspectRatio)
+    ctx.font = '30px Impact';
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle"
+    ctx.fillStyle = 'rgb(255, 191, 0)';
+    ctx.fillText(player.goldBlobs, 650, canvasSect.arenaHeight + 135);
+
 
     // Move shop page according to shop.targetX
     shop.x = lerp(shop.x, shop.targetX, 0.20)
+
 
     // Draw shop page
     ctx.fillStyle = 'rgba(9, 9, 9, 0.8)'
@@ -696,15 +779,32 @@ function draw() {
     ctx.fillStyle = 'rgb(187, 187, 187)';
     ctx.fillText("Shop", shop.x + 40, 40);
 
+
+    // Draw Tabs in shop
+    for (let k = shopItems.length - 1; k >= 0; k--) {
+        ctx.fillStyle = 'rgb(100, 100, 100)'
+        ctx.fillRect(shop.slotStartX + shop.x + k * (shop.width - 2 * shop.slotStartX + 20) / shopItems.length, 120, (shop.width - 2 * shop.slotStartX) / shopItems.length, 60)
+
+
+        ctx.font = '23px Impact';
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = 'rgb(187, 187, 187)';
+        ctx.fillText(shopItems[k][0], (shop.slotStartX + shop.x + k * (shop.width - 2 * shop.slotStartX + 20) / shopItems.length) + ((shop.width - 2 * shop.slotStartX) / shopItems.length) / 2, 150);
+    }
+
+
     // Resets cursor style to default when not hovering over a slot
     document.body.style.cursor = 'default';
 
+
     // Draw slots & description
-    for (let l = shopItems.length - 1; l >= 0; l--) {
-        const iconInfo = icons[shopItems[l].icon]
-        const iconWidth = shopItems[l].drawWidth
-        const iconHeight = shopItems[l].drawWidth / iconInfo.aspectRatio
+    for (let l = shopItems[shop.currentTab].length - 1; l >= 1; l--) {
+        const iconInfo = icons[shopItems[shop.currentTab][l].icon]
+        const iconWidth = shopItems[shop.currentTab][l].drawWidth
+        const iconHeight = shopItems[shop.currentTab][l].drawWidth / iconInfo.aspectRatio
         let hovering = false
+
 
         // Draw outline & shadow around slot when slot is hovered
         if (isHoveringSlot(getSlotInfo(l))) {
@@ -714,12 +814,15 @@ function draw() {
             ctx.shadowColor = "rgba(255, 204, 0, 0.8)";
             ctx.shadowBlur = 30;
 
+
             document.body.style.cursor = 'pointer';
         }
+
 
         ctx.fillStyle = 'rgb(189, 152, 11)'
         ctx.fillRect(getSlotInfo(l).x, getSlotInfo(l).y, shop.slotSize, shop.slotSize)
         ctx.shadowBlur = 0;
+
 
         // Draw icon in shop
         ctx.drawImage(
@@ -730,55 +833,87 @@ function draw() {
             iconHeight
         );
 
+
         // Draw item title
         ctx.font = '25px Impact';
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
         ctx.fillStyle = 'rgb(151, 151, 151)';
-        ctx.fillText(shopItems[l].label, getSlotInfo(l).x + shop.slotGap + shop.slotSize, getSlotInfo(l).y + 5);
+        ctx.fillText(shopItems[shop.currentTab][l].label, getSlotInfo(l).x + shop.slotGap + shop.slotSize, getSlotInfo(l).y + 5);
+
 
         // Draw item description
         ctx.font = '18px Impact';
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
         ctx.fillStyle = 'rgb(151, 151, 151)';
-        ctx.fillText(shopItems[l].desc, getSlotInfo(l).x + shop.slotGap + shop.slotSize, getSlotInfo(l).y + 35);
+        ctx.fillText(shopItems[shop.currentTab][l].desc, getSlotInfo(l).x + shop.slotGap + shop.slotSize, getSlotInfo(l).y + 35);
+
 
         // Draw Gold Blob next to cost
         ctx.drawImage(icons["goldBlob"].image, getSlotInfo(l).x + shop.slotGap + shop.slotSize, getSlotInfo(l).y + 60, 20, 20 / icons["goldBlob"].aspectRatio)
+
 
         // Write cost
         ctx.font = '18px Impact';
         ctx.textAlign = "left";
         ctx.textBaseline = "top"
         ctx.fillStyle = 'rgb(255, 191, 0)';
-        ctx.fillText(shopItems[l].cost, getSlotInfo(l).x + shop.slotGap + shop.slotSize + 25, getSlotInfo(l).y + 60);
+        ctx.fillText(shopItems[shop.currentTab][l].cost, getSlotInfo(l).x + shop.slotGap + shop.slotSize + 25, getSlotInfo(l).y + 60);
     }
 
-    if (player.hp <= player.maxHp / 3) canvasSect.tintStrength = 1 - (player.hp / (player.maxHp / 3)) 
+
+    if (player.hp <= player.maxHp / 3) canvasSect.tintStrength = 1 - (player.hp / (player.maxHp / 3))
     else canvasSect.tintStrength = 0
+
 
     const gradient = ctx.createRadialGradient(
         canvas.width / 2,
         canvas.height / 2,
         10,
-        canvas.width / 2, 
+        canvas.width / 2,
         canvas.height / 2, 1800
     );
 
+
     canvasSect.pulseSpeed += 0.05 + canvasSect.tintStrength / 10
     const pulseTint = 0.75 + Math.sin(canvasSect.pulseSpeed) * 0.25
+
 
     gradient.addColorStop(0, "rgba(255, 0, 0, 0)");
     gradient.addColorStop(0.5, `rgba(255, 0, 0, ${lerp(0, canvasSect.tintStrength, pulseTint * 0.4)})`);
     gradient.addColorStop(1, `rgba(255, 0, 0, ${lerp(0, canvasSect.tintStrength, pulseTint * 0.8)})`);
 
+
     // Apply to shape and draw
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+
+    // Checks if hp is below 0
+    if (player.hp <= 0) {
+        player.hp = 0
+        ctx.fillStyle = 'rgba(19, 19, 19, 0.65)';
+        ctx.fillRect(0, canvas.height / 3, canvas.width, canvas.height / 3)
+        ctx.font = '60px Optimus_Princeps';
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle"
+        ctx.fillStyle = 'rgb(169, 0, 0)';
+        ctx.fillText("You Died", canvas.width / 2, canvas.height / 2)
+        return;
+    }
     requestAnimationFrame(draw);
     ctx.restore();
+}
+
+
+// Image drawer
+function makeImage(img, x, y, rad = 0, w = img.width, h = img.height) {
+    ctx.save();
+    ctx.translate(x, y)
+    ctx.rotate(rad)
+    ctx.drawImage(img, -w / 2, -h / 2, w, h)
+    ctx.restore()
 }
 
 
@@ -788,9 +923,11 @@ function random(type, min, max) {
     if (type == "int") return Math.floor(Math.random() * (max - min + 1) + min)
 }
 
+
 function pickUpItem(type) {
     dropTypes[type].onPickup()
 }
+
 
 function spawnDrops(enemy) {
     for (const drop of enemy.loot) {
@@ -800,11 +937,14 @@ function spawnDrops(enemy) {
     }
 }
 
+
 // Registers when two circles touch
 function hit(a, b) {
     const dist = Math.hypot(a.pos.x - b.pos.x, a.pos.y - b.pos.y);
     return (dist <= a.size + b.size);
 }
+
+
 
 
 // Resolves collision between enemy and enemy
@@ -819,10 +959,7 @@ function enemycollision(enemyList) {
             const dist = dir.mag();
             const target = enemyList[i].size + enemyList[j].size;
 
-
             if (dist >= target) continue;
-
-
 
             dir.normalize();
             const totalMass = enemyList[i].mass + enemyList[j].mass;
@@ -832,7 +969,6 @@ function enemycollision(enemyList) {
             enemyList[i].pos.add(
                 new Vector(dir.x, dir.y).mult(overlap * (enemyList[i].mass / enemyList[j].mass))
             );
-
 
             // Push enemyList[j]
             enemyList[j].pos.sub(
@@ -855,7 +991,6 @@ function enemycollision(enemyList) {
                 impulseMag * dir.y
             );
 
-
             enemyList[i].vel.add(new Vector(
                 impulse.x / enemyList[i].mass,
                 impulse.y / enemyList[i].mass
@@ -867,10 +1002,11 @@ function enemycollision(enemyList) {
                 impulse.y / enemyList[j].mass
             )
             );
-
         }
     }
 }
+
+
 
 
 // Resolves collision between player and enemy
@@ -883,12 +1019,18 @@ function playercollision(enemy) {
     const target = player.size + enemy.size;
 
 
+
+
     if (dist >= target) return;
+
+
 
 
     const overlap = target - dist;
     dir.normalize();
     const totalMass = player.mass + enemy.mass;
+
+
 
 
     // Push player
@@ -897,26 +1039,35 @@ function playercollision(enemy) {
     );
 
 
+
+
     // Push enemy
     enemy.pos.sub(
         new Vector(dir.x, dir.y).mult(overlap * (enemy.mass / player.mass))
     );
+
 
     const relatVel = new Vector(
         player.vel.x - enemy.vel.x,
         player.vel.y - enemy.vel.y
     );
 
+
     const velDir = relatVel.x * dir.x + relatVel.y * dir.y;
+
 
     if (velDir > 0) return;
 
+
     const impulseMag = -1 * (velDir / ((1 / player.mass) + (1 / enemy.mass)));
+
 
     const impulse = new Vector(
         impulseMag * dir.x,
         impulseMag * dir.y
     );
+
+
 
 
     player.vel.add(new Vector(
@@ -925,30 +1076,37 @@ function playercollision(enemy) {
     )
     );
 
+
     enemy.vel.sub(new Vector(
         impulse.x / enemy.mass,
         impulse.y / enemy.mass
     )
     );
 
+
     if (player.immune > 0 || player.devMode) return;
+
 
     // Add knockback if player is not immune
     player.vel.add(new Vector(dir.x, dir.y).mult(10));
     player.immune = 200
 
+
     // Damage
     if (player.hp > 0) player.hp -= enemy.dam
+
 
     // Apply screen shake
     shakeScreen(10, 60)
 };
+
 
 // Define the screen shake
 function shakeScreen(strength, time) {
     canvasSect.shakeStrength = strength
     canvasSect.shakeTime = time
 }
+
 
 function findCurrentGun() {
     switch (gunType) {
@@ -958,6 +1116,7 @@ function findCurrentGun() {
         case 3: return guns[3]
     }
 }
+
 
 function waveSpawning() {
     if (!wave.active) return;
@@ -981,17 +1140,20 @@ function waveSpawning() {
     }
 }
 
+
 // If shop is opened, targetX will be set to shop width, and set to canvas width if shop is closed
 function toggleShop() {
     shop.open = !shop.open
     shop.targetX = shop.open ? canvas.width - shop.width : canvas.width
 }
 
+
 function buyItem(num) {
-    if (player.goldBlobs < shopItems[num].cost) return
-    player.goldBlobs -= shopItems[num].cost
-    shopItems[num].onBuy()
+    if (player.goldBlobs < shopItems[shop.currentTab][num].cost) return
+    player.goldBlobs -= shopItems[shop.currentTab][num].cost
+    shopItems[shop.currentTab][num].onBuy()
 }
+
 
 // Returns if mouse is hovering over slot
 function isHoveringSlot(slot) {
@@ -1004,14 +1166,17 @@ function isHoveringSlot(slot) {
     )
 }
 
+
 function getSlotInfo(l) {
     return {
         x: shop.slotStartX + shop.x,
-        y: shop.slotStartY + l * (shop.slotGap + shop.slotSize),
+        y: shop.slotStartY + (l - 1) * (shop.slotGap + shop.slotSize),
     }
 }
 
+
 const lerp = (start, end, amt) => (1 - amt) * start + amt * end
+
 
 // Handle window resizing
 window.addEventListener('resize', () => {
@@ -1020,11 +1185,15 @@ window.addEventListener('resize', () => {
 });
 
 
+
+
 // Tracks coordinates of mouse
 window.addEventListener('mousemove', (event) => {
     player.mouse.x = event.clientX
     player.mouse.y = event.clientY
 });
+
+
 
 
 // Checks if key is down
@@ -1055,6 +1224,7 @@ window.addEventListener('keydown', (event) => {
         dropList.push(new Drop(getRandomDrop(dropTypes), player.mouse.x, player.mouse.y))
     }
     if (event.key == 'z') {
+        if (event.repeat) return;
         toggleShop()
     }
     if (event.key == '=') {
@@ -1076,10 +1246,14 @@ window.addEventListener('keydown', (event) => {
 });
 
 
+
+
 // Check if key is up
 window.addEventListener('keyup', (event) => {
     keyPressed[event.key] = false;
 });
+
+
 
 
 // Check for clicks
@@ -1091,14 +1265,16 @@ window.addEventListener('click', (event) => {
         case 0: // Left click
             event.preventDefault();
 
+
             if (shop.open === true && player.mouse.x >= shop.x) {
-                for (let l = shopItems.length - 1; l >= 0; l--) {
+                for (let l = shopItems[shop.currentTab].length - 1; l >= 1; l--) {
                     if (isHoveringSlot(getSlotInfo(l))) {
                         buyItem(l)
                     }
                 }
                 break;
             }
+
 
             if (player.mouse.x >= 0 && player.mouse.x <= canvasSect.arenaWidth && player.mouse.y >= 0 && player.mouse.y <= canvasSect.arenaHeight) {
                 if (gunType == 0) {
@@ -1108,6 +1284,7 @@ window.addEventListener('click', (event) => {
                     }
                     timeSinceLastShot = 0
                 }
+
 
                 if (reloading == 0) {
                     if (timeSinceLastShot > currentGun.fireRate) {
@@ -1124,8 +1301,14 @@ window.addEventListener('click', (event) => {
 });
 
 
+
+
 // Prevents pop-up from opening (Right click)
 window.addEventListener('contextmenu', (event) => {
     event.preventDefault();
     if (player.devMode) player.pos = new Vector(player.mouse.x, player.mouse.y);
 });
+
+
+
+
